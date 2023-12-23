@@ -1,0 +1,164 @@
+---
+title: "Homework 3"
+author: Benjamin Anderson II
+format: pdf
+---
+
+```{r setup}
+#| message: false
+#| warning: false
+library(tidyverse)
+```
+
+Tasks that require an answer are bolded (inside `**` in the .qmd file). For any task that includes a question (i.e. it ends with "?"), you should also answer the question in sentence form.
+
+# Data Manipulation with dplyr
+
+These questions all use the `msleep` data set that comes with ggplot2. You can view the data by typing its name, or look at the help file to learn more about the variables inside:
+
+```{r data}
+#| eval: false
+?msleep
+```
+
+Each row of the data characterizes one mammal.
+
+## 1.
+
+**Extract the mammals from the `"Vulpes"` genus.**
+
+```{r}
+msleep |>
+  filter(genus == "Vulpes")
+```
+
+## 2.
+
+**Extract the `name` and `vore` columns**.
+
+```{r}
+msleep |>
+  select(name, vore)
+```
+
+## 3.
+
+**Which mammals sleep less than 3 hours a day?**
+
+Find the corresponding rows first, then extract the `name` and `vore` columns from the result.
+
+```{r}
+msleep |>
+  filter(sleep_total < 3) |>
+  select(name, vore)
+```
+The three mammals that sleep less than 3 hours per day are the __horse__, __giraffe__, and __pilot whale__.
+
+## 4.
+
+**Create a scatterplot of `sleep_total` versus `bodywt` for mammals in the order `"Carnivora"`. Does there appear to be a relationship between total sleep and body weight for the carnivores in this data?**
+
+*Find the corresponding rows first, then create the scatterplot with the result.*
+
+```{r}
+msleep |>
+  filter(order == "Carnivora") |>
+  ggplot(mapping = aes(x = sleep_total, y = bodywt)) +
+  geom_point(color = "steelblue") +
+  labs(x = "Nightly Sleep (hrs)",
+       y = "Body Weight (kg)",
+       title = "Sleep vs Body Weight for Order Carnivora")
+```
+There seems to be a small level of correlation between nightly sleep and body weight for the order Carnivora, but the number of data points makes it difficult to tell if it is just coincidence or not.
+
+## 5.
+
+**Re-write the following code to use the pipe, `|>`, rather than intermediate variables.**
+
+```{r, message = FALSE}
+msleep |> 
+  group_by(order) |>
+    summarise(
+      avg_sleep = mean(sleep_total, na.rm = TRUE)
+    ) |>
+  filter(avg_sleep > 15)
+```
+
+## 6.
+
+**Add a column called `brain_ratio` that contains the ratio of brain weight to body weight.**
+
+```{r}
+msleep |>
+  mutate(brain_ratio = brainwt/bodywt) |>
+  select(name, brain_ratio)
+```
+
+## 7.
+
+**Which three animals have the highest `brain_ratio`?**
+
+To answer this question, first make a histogram of `brain_ratio`:
+
+```{r}
+msleep |>
+  mutate(brain_ratio = brainwt/bodywt) |>
+    ggplot(mapping = aes(x=brain_ratio)) + 
+    geom_histogram(
+      na.rm = TRUE,
+      bins = 70)
+```
+
+Examine the histogram for a good numeric threshold, then use filter to find `brain_ratio`s above the threshold:
+
+```{r}
+msleep |>
+  mutate(brain_ratio = brainwt/bodywt) |>
+  filter(brain_ratio > 0.0275) |>
+  select(name)
+```
+The three animals with the highest brain ratio are the __owl monkey__, __lesser short-tailed shrew__, and __thirteen-lined ground squirrel__.
+
+## 8.
+
+**Use `summarise()` to find the mean, smallest and largest values of sleep cycle lengths over all rows in the data.**
+
+```{r}
+msleep |>
+  summarise(
+    avg_sleep_cycle = mean(sleep_cycle, na.rm = TRUE),
+    min_sleep_cycle = min(sleep_cycle, na.rm = TRUE),
+    max_sleep_cycle = max(sleep_cycle, na.rm = TRUE)
+  )
+
+```
+
+## 9.
+
+**Find the mean, smallest and largest values of sleep cycle lengths for each order.** Order here refers to the `order` column in the data.
+
+```{r}
+#| warning: false
+sleep_by_order <- msleep |>
+  group_by(order) |>
+  summarise(
+    avg_sleep_cycle = mean(sleep_cycle, na.rm = TRUE),
+    min_sleep_cycle = min(sleep_cycle, na.rm = TRUE),
+    max_sleep_cycle = max(sleep_cycle, na.rm = TRUE)
+  )
+```
+
+## 10.
+
+Using your result from the previous question,
+**create a scatterplot of the mean sleep cycle length by order**. 
+
+```{r}
+sleep_by_order |>
+  filter(!is.nan(avg_sleep_cycle)) |>
+  ggplot(mapping = aes(x = order, y = avg_sleep_cycle)) + 
+  geom_point(na.rm = TRUE)
+```
+I chose to remove the orders which contained no sleep cycle data, to undo this you would just need to delete the line **`filter(!is.nan(avg_sleep_cycle)) |>`**
+
+*(Sometimes a scatterplot like this, with a categorical variable on one axis, is called a dot chart)*.
